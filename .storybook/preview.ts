@@ -1,4 +1,5 @@
 import type { Preview } from "@storybook/react";
+import "./index.css";
 
 // function to get user dark mode
 const getDarkMode = () => {
@@ -13,7 +14,6 @@ const preview: Preview = {
     backgrounds: {
       default: getDarkMode() ? "dark" : "light",
     },
-    actions: { argTypesRegex: "^on[A-Z].*" },
     controls: {
       matchers: {
         color: /(background|color)$/i,

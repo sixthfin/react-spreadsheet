@@ -10,6 +10,8 @@ import {
   EntireRowsSelection,
   EntireColumnsSelection,
   EmptySelection,
+  Point,
+  SpreadsheetRef,
 } from "..";
 import * as Matrix from "../matrix";
 import { AsyncCellDataEditor, AsyncCellDataViewer } from "./AsyncCellData";
@@ -17,7 +19,6 @@ import CustomCell from "./CustomCell";
 import { RangeEdit, RangeView } from "./RangeDataComponents";
 import { SelectEdit, SelectView } from "./SelectDataComponents";
 import { CustomCornerIndicator } from "./CustomCornerIndicator";
-
 type StringCell = CellBase<string | undefined>;
 type NumberCell = CellBase<number | undefined>;
 
@@ -39,14 +40,50 @@ const meta: Meta<Props<StringCell>> = {
     data: EMPTY_DATA,
   },
   argTypes: {
+    className: { type: "string" },
+    darkMode: { type: "boolean" },
     columnLabels: {
-      control: "array",
-      defaultValue: [],
+      type: {
+        name: "array",
+        value: {
+          name: "string",
+        },
+      },
     },
     rowLabels: {
-      control: "array",
-      defaultValue: [],
+      type: {
+        name: "array",
+        value: {
+          name: "string",
+        },
+      },
     },
+    hideRowIndicators: { type: "boolean" },
+    hideColumnIndicators: { type: "boolean" },
+    selected: {
+      type: {
+        name: "other",
+        value: "Selection",
+      },
+    },
+    createFormulaParser: { type: "function" },
+    ColumnIndicator: { type: "function" },
+    CornerIndicator: { type: "function" },
+    RowIndicator: { type: "function" },
+    Table: { type: "function" },
+    Row: { type: "function" },
+    HeaderRow: { type: "function" },
+    Cell: { type: "function" },
+    DataViewer: { type: "function" },
+    DataEditor: { type: "function" },
+    onKeyDown: { type: "function" },
+    onChange: { type: "function" },
+    onModeChange: { type: "function" },
+    onSelect: { type: "function" },
+    onActivate: { type: "function" },
+    onBlur: { type: "function" },
+    onCellCommit: { type: "function" },
+    onEvaluatedDataChange: { type: "function" },
   },
   decorators: [
     (Story): React.ReactElement => (
@@ -229,7 +266,7 @@ export const Filter: StoryFn<Props<StringCell>> = (props) => {
   const [filter, setFilter] = React.useState("");
 
   const handleFilterChange = React.useCallback(
-    (event) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       const nextFilter = event.target.value;
       setFilter(nextFilter);
     },
@@ -312,6 +349,52 @@ export const ControlledSelection: StoryFn<Props<StringCell>> = (props) => {
         </button>
       </div>
       <Spreadsheet {...props} selected={selected} onSelect={handleSelect} />;
+    </div>
+  );
+};
+
+export const ControlledActivation: StoryFn<Props<StringCell>> = (props) => {
+  const spreadsheetRef = React.useRef<SpreadsheetRef>();
+
+  const [activationPoint, setActivationPoint] = React.useState<Point>({
+    row: 0,
+    column: 0,
+  });
+
+  const handleActivate = React.useCallback(() => {
+    spreadsheetRef.current?.activate(activationPoint);
+  }, [activationPoint]);
+
+  return (
+    <div>
+      <div>
+        <input
+          id="row"
+          title="row"
+          type="number"
+          value={activationPoint.row}
+          onChange={(e) =>
+            setActivationPoint(() => ({
+              ...activationPoint,
+              row: Number(e.target.value),
+            }))
+          }
+        />
+        <input
+          id="column"
+          title="row"
+          type="column"
+          value={activationPoint.column}
+          onChange={(e) =>
+            setActivationPoint(() => ({
+              ...activationPoint,
+              column: Number(e.target.value),
+            }))
+          }
+        />
+        <button onClick={handleActivate}>Activate</button>
+      </div>
+      <Spreadsheet ref={spreadsheetRef} {...props} />;
     </div>
   );
 };

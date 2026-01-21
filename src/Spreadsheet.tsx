@@ -119,13 +119,28 @@ export type Props<CellType extends Types.CellBase> = {
     nextCell: null | CellType,
     coords: null | Point.Point
   ) => void;
+  /** Callback called when the Spreadsheet's evaluated data changes. */
+  onEvaluatedDataChange?: (data: Matrix.Matrix<CellType>) => void;
+};
+
+/**
+ * The Spreadsheet Ref Type
+ */
+
+export type SpreadsheetRef = {
+  /**
+   * Pass the desired point as a prop to specify which one should be activated.
+   */
+  activate: (point: Point.Point) => void;
 };
 
 /**
  * The Spreadsheet component
  */
-const Spreadsheet = <CellType extends Types.CellBase>(
-  props: Props<CellType>
+
+const Spreadsheet = <SpreadsheetRef, CellType extends Types.CellBase>(
+  props: Props<CellType>,
+  ref: React.ForwardedRef<SpreadsheetRef>
 ): React.ReactElement => {
   const {
     className,
@@ -146,6 +161,7 @@ const Spreadsheet = <CellType extends Types.CellBase>(
     onActivate = () => {},
     onBlur = () => {},
     onCellCommit = () => {},
+    onEvaluatedDataChange = () => {},
   } = props;
   type State = Types.StoreState<CellType>;
 
@@ -174,41 +190,43 @@ const Spreadsheet = <CellType extends Types.CellBase>(
 
   const rootRef = React.useRef<HTMLDivElement>(null);
 
-  const copy = React.useCallback(() => dispatch(Actions.copy()), [dispatch]);
-  const cut = React.useCallback(() => dispatch(Actions.cut()), [dispatch]);
-  const paste = React.useCallback(
-    (data: string) => dispatch(Actions.paste(data)),
-    [dispatch]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const useAction = <T extends (...args: any[]) => Actions.Action>(
+    action: T
+  ) => {
+    return React.useCallback(
+      (...args: Parameters<T>) => dispatch(action(...args)),
+      [action]
+    );
+  };
+
+  const cut = useAction(Actions.cut);
+  const copy = useAction(Actions.copy);
+  const paste = useAction(Actions.paste);
+  const onKeyDownAction = useAction(Actions.keyDown);
+  const onKeyPress = useAction(Actions.keyPress);
+  const onDragStart = useAction(Actions.dragStart);
+  const onDragEnd = useAction(Actions.dragEnd);
+  const setData = useAction(Actions.setData);
+  const setCreateFormulaParser = useAction(Actions.setCreateFormulaParser);
+  const blur = useAction(Actions.blur);
+  const setSelection = useAction(Actions.setSelection);
+  const activate = useAction(Actions.activate);
+
+  // Memoize methods to be exposed via ref
+  const methods = React.useMemo(
+    () => ({
+      activate: (point: Point.Point) => {
+        activate(point);
+      },
+    }),
+    []
   );
-  const onKeyDownAction = React.useCallback(
-    (event: React.KeyboardEvent) => dispatch(Actions.keyDown(event)),
-    [dispatch]
-  );
-  const onKeyPress = React.useCallback(
-    (event: React.KeyboardEvent) => dispatch(Actions.keyPress(event)),
-    [dispatch]
-  );
-  const onDragStart = React.useCallback(
-    () => dispatch(Actions.dragStart()),
-    [dispatch]
-  );
-  const onDragEnd = React.useCallback(
-    () => dispatch(Actions.dragEnd()),
-    [dispatch]
-  );
-  const setData = React.useCallback(
-    (data: Matrix.Matrix<CellType>) => dispatch(Actions.setData(data)),
-    [dispatch]
-  );
-  const setCreateFormulaParser = React.useCallback(
-    (createFormulaParser: Types.CreateFormulaParser) =>
-      dispatch(Actions.setCreateFormulaParser(createFormulaParser)),
-    [dispatch]
-  );
-  const blur = React.useCallback(() => dispatch(Actions.blur()), [dispatch]);
-  const setSelection = React.useCallback(
-    (selection: Selection) => dispatch(Actions.setSelection(selection)),
-    [dispatch]
+
+  // Expose methods to parent via ref
+  React.useImperativeHandle<SpreadsheetRef, SpreadsheetRef>(
+    ref,
+    () => methods as SpreadsheetRef
   );
 
   // Track active
@@ -241,6 +259,17 @@ const Spreadsheet = <CellType extends Types.CellBase>(
 
     prevDataRef.current = state.model.data;
   }, [state.model.data, onChange, props.data]);
+
+  const prevEvaluatedDataRef = React.useRef<Matrix.Matrix<CellType>>(
+    state.model.evaluatedData
+  );
+  React.useEffect(() => {
+    if (state?.model?.evaluatedData !== prevEvaluatedDataRef?.current) {
+      onEvaluatedDataChange(state?.model?.evaluatedData);
+    }
+
+    prevEvaluatedDataRef.current = state.model.evaluatedData;
+  }, [state?.model?.evaluatedData, onEvaluatedDataChange]);
 
   // Listen to selection changes
   const prevSelectedRef = React.useRef<Selection>(state.selected);
@@ -558,4 +587,4 @@ const Spreadsheet = <CellType extends Types.CellBase>(
   );
 };
 
-export default Spreadsheet;
+export default React.forwardRef(Spreadsheet);
