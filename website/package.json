@@ -19,7 +19,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@algolia/client-search": "^4.9.1",
+    "@algolia/client-search": "^4.27.0",
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/mdx-loader": "^3.9.2",
     "@docusaurus/preset-classic": "^3.9.2",
