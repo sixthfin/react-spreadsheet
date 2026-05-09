@@ -35,7 +35,7 @@
     "react-dom": "^18.0.0",
     "react-loadable": "^5.5.0",
     "react-spreadsheet": "^0.10.1",
-    "scheduler": "^0.23.0",
+    "scheduler": "^0.27.0",
     "search-insights": "^2.17.3",
     "typedoc": "^0.28.14",
     "typedoc-plugin-markdown": "^4.0.0",
